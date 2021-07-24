@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
+import functools
 
 from PyQt5.QtCore import Qt
 
@@ -83,11 +84,30 @@ class PyculatorUi(QMainWindow):
         self.setDisplayText("")
 
 
+class PyculatorControl:
+    def __init__(self, view):
+        self._view = view
+        self._connectSignals()
+    
+    def _connectSignals(self):
+        for buttonText, button in self._view.buttons.items():
+            if buttonText not in {"=", "C"}:
+                button.clicked.connect(functools.partial(self._buildExpression, buttonText))
+        
+        self._view.buttons["C"].clicked.connect(self._view.clearDisplay)
+    
+    def _buildExpression(self, expression):
+        newExpression = self._view.displayText() + expression
+        self._view.setDisplayText(newExpression)
+
+
 def main():
     pyculator = QApplication(sys.argv)
 
     view = PyculatorUi()
     view.show()
+
+    controller = PyculatorControl(view)
 
     sys.exit(pyculator.exec_())
 
