@@ -13,6 +13,8 @@ from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtWidgets import QLineEdit
 from PyQt5.QtWidgets import QPushButton
 
+ERROR_MESSAGE = "ERROR"
+
 class PyculatorUi(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -85,7 +87,8 @@ class PyculatorUi(QMainWindow):
 
 
 class PyculatorControl:
-    def __init__(self, view):
+    def __init__(self, model, view):
+        self._model = model
         self._view = view
         self._connectSignals()
     
@@ -95,10 +98,28 @@ class PyculatorControl:
                 button.clicked.connect(functools.partial(self._buildExpression, buttonText))
         
         self._view.buttons["C"].clicked.connect(self._view.clearDisplay)
+        self._view.buttons["="].clicked.connect(self._calculateResult)
+        self._view.display.returnPressed.connect(self._calculateResult)
     
     def _buildExpression(self, expression):
+        if self._view.displayText() == ERROR_MESSAGE:
+            self._view.clearDisplay()
+
         newExpression = self._view.displayText() + expression
         self._view.setDisplayText(newExpression)
+    
+    def _calculateResult(self):
+        result = self._model(self._view.displayText())
+        self._view.setDisplayText(result)
+
+
+def evaluateExpression(expression):
+    try:
+        result = str(eval(expression, {}, {}))
+    except Exception:
+        result = ERROR_MESSAGE
+    
+    return result
 
 
 def main():
@@ -107,7 +128,7 @@ def main():
     view = PyculatorUi()
     view.show()
 
-    controller = PyculatorControl(view)
+    controller = PyculatorControl(evaluateExpression, view)
 
     sys.exit(pyculator.exec_())
 
